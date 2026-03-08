@@ -42,9 +42,11 @@ void main() {
       try {
         await tester.tap(button1);
         await tester.pumpAndSettle(const Duration(milliseconds: 300));
-      } catch (e) {
-        // Expected to fail on 5th click
+      } catch (e, stack) {
+        // Expected to fail on 5th click - report crash manually
         if (i == 4) {
+          await AITester.reportError(e, stack, viewTag: 'HOME_VIEW');
+          await Future.delayed(const Duration(milliseconds: 500)); // Give time to send
           return;
         }
       }
@@ -82,8 +84,10 @@ void main() {
       await tester.tap(tapButton);
       await tester.pumpAndSettle(const Duration(milliseconds: 300));
       fail('Expected null pointer error on 2nd tap');
-    } catch (e) {
-      // Expected error
+    } catch (e, stack) {
+      // Expected error - report crash manually
+      await AITester.reportError(e, stack, viewTag: 'VIEW_A');
+      await Future.delayed(const Duration(milliseconds: 500)); // Give time to send
     }
   });
 
@@ -114,9 +118,11 @@ void main() {
       try {
         await tester.tap(button2);
         await tester.pumpAndSettle(const Duration(milliseconds: 300));
-      } catch (e) {
-        // Expected to fail on 3rd click
+      } catch (e, stack) {
+        // Expected to fail on 3rd click - report crash manually
         if (i == 2) {
+          await AITester.reportError(e, stack, viewTag: 'HUB_VIEW');
+          await Future.delayed(const Duration(milliseconds: 500)); // Give time to send
           return;
         }
       }
@@ -146,8 +152,10 @@ void main() {
       await tester.tap(find.text('Button 3 -> View E'));
       await tester.pumpAndSettle(const Duration(milliseconds: 500));
       fail('Expected StateError crash when opening View E');
-    } catch (e) {
-      // Expected error
+    } catch (e, stack) {
+      // Expected error - report crash manually
+      await AITester.reportError(e, stack, viewTag: 'VIEW_E');
+      await Future.delayed(const Duration(milliseconds: 500)); // Give time to send
     }
   });
 }
