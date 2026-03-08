@@ -56,7 +56,7 @@ class _AITesterAppState extends State<AITesterApp> {
         GoRoute(path: '/view-b', builder: (context, state) => TaggedViewPage(appState: _appState, title: 'View B', viewTag: ViewTags.viewB)),
         GoRoute(path: '/view-c', builder: (context, state) => TaggedViewPage(appState: _appState, title: 'View C', viewTag: ViewTags.viewC)),
         GoRoute(path: '/view-d', builder: (context, state) => TaggedViewPage(appState: _appState, title: 'View D', viewTag: ViewTags.viewD)),
-        GoRoute(path: '/crash', builder: (context, state) => CrashViewPage(appState: _appState)),
+        GoRoute(path: '/view-e', builder: (context, state) => ViewEPage(appState: _appState)),
       ],
     );
   }
@@ -83,7 +83,7 @@ class ViewTags {
   static const viewB = 'VIEW_B';
   static const viewC = 'VIEW_C';
   static const viewD = 'VIEW_D';
-  static const crash = 'CRASH_VIEW';
+  static const viewE = 'VIEW_E';
 }
 
 class ActionTags {
@@ -311,13 +311,10 @@ class _HomePageState extends State<HomePage> {
 
   void _handleButton1Click() {
     _button1ClickCount++;
-    print('🐛 Home Button 1 clicked: $_button1ClickCount times');
     
-    // BUG 1: Division by zero on 5th click
     if (_button1ClickCount == 5) {
-      print('🔴 Triggering division by zero bug!');
-      final result = 100 ~/ 0; // Integer division by zero
-      print('Result: $result'); // Never reached
+      final result = 100 ~/ 0;
+      print('Result: $result');
     }
     
     if (context.mounted) context.push('/view-a');
@@ -336,7 +333,7 @@ class _HomePageState extends State<HomePage> {
               actionTag: ActionTags.home1,
               viewTag: ViewTags.home,
               onPressed: _handleButton1Click,
-              child: const Text('Button 1 -> View A (click 5x for bug)'),
+              child: const Text('Button 1 -> View A'),
             ),
             AIButton(
               actionTag: ActionTags.home2,
@@ -381,13 +378,10 @@ class _HubPageState extends State<HubPage> {
 
   void _handleButton2Click() {
     _button2ClickCount++;
-    print('🐛 Hub Button 2 clicked: $_button2ClickCount times');
     
-    // BUG 3: JSON Parse error on 3rd click
     if (_button2ClickCount == 3) {
-      print('🔴 Triggering JSON parse error!');
       final invalidJson = '{"broken": json';
-      jsonDecode(invalidJson); // FormatException
+      jsonDecode(invalidJson);
     }
     
     if (context.mounted) context.push('/view-d');
@@ -414,15 +408,15 @@ class _HubPageState extends State<HubPage> {
               actionTag: ActionTags.hub2,
               viewTag: ViewTags.hub,
               onPressed: _handleButton2Click,
-              child: const Text('Button 2 -> View D (click 3x for bug)'),
+              child: const Text('Button 2 -> View D'),
             ),
             AIButton(
               actionTag: ActionTags.hub3,
               viewTag: ViewTags.hub,
               onPressed: () {
-                if (context.mounted) context.push('/crash');
+                if (context.mounted) context.push('/view-e');
               },
-              child: const Text('Button 3 -> Crash View'),
+              child: const Text('Button 3 -> View E'),
             ),
           ],
         ),
@@ -453,13 +447,10 @@ class _ViewAPageState extends State<ViewAPage> {
   void _handleTap() {
     setState(() {
       _tapCount++;
-      print('🐛 View A tapped: $_tapCount times');
       
-      // BUG 2: Null pointer error on 2nd tap
       if (_tapCount == 2) {
-        print('🔴 Triggering null pointer bug!');
-        final length = _nullableData!.length; // Null check error
-        print('Length: $length'); // Never reached
+        final length = _nullableData!.length;
+        print('Length: $length');
       }
     });
   }
@@ -476,7 +467,7 @@ class _ViewAPageState extends State<ViewAPage> {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _handleTap,
-              child: const Text('Tap me (2nd tap crashes)'),
+              child: const Text('Tap me'),
             ),
           ],
         ),
@@ -512,47 +503,34 @@ class _TaggedViewPageState extends State<TaggedViewPage> {
   }
 }
 
-class CrashViewPage extends StatefulWidget {
-  const CrashViewPage({super.key, required this.appState});
+class ViewEPage extends StatefulWidget {
+  const ViewEPage({super.key, required this.appState});
 
   final AppState appState;
 
   @override
-  State<CrashViewPage> createState() => _CrashViewPageState();
+  State<ViewEPage> createState() => _ViewEPageState();
 }
 
-class _CrashViewPageState extends State<CrashViewPage> {
-  static const bool _enableCrash = true;
-
+class _ViewEPageState extends State<ViewEPage> {
   @override
   void initState() {
     super.initState();
-    _triggerCrashFlow();
+    AITester.trackViewOpen(ViewTags.viewE);
+    _loadData();
   }
 
-  Future<void> _triggerCrashFlow() async {
-    print('🔴 [DEBUG] _triggerCrashFlow chiamato - _enableCrash: $_enableCrash');
-    AITester.trackViewOpen(ViewTags.crash);
-    print('🔴 [DEBUG] trackViewOpen completato');
-
-    if (_enableCrash) {
-      print('🔴 [DEBUG] Sto per lanciare il crash...');
-      final error = StateError('Crash intenzionale per test AI replay/fix');
-      final stack = StackTrace.current;
-      // Report crash before throwing (AITester will also catch it automatically)
-      await AITester.reportError(error, stack, viewTag: ViewTags.crash);
-      print('🔴 [DEBUG] reportError completato, ora lancio throw...');
-      throw error;
-    } else {
-      print('🟡 [DEBUG] Crash disabilitato - _enableCrash è false');
-    }
+  Future<void> _loadData() async {
+    final values = <int>[];
+    final selected = values.first;
+    print('Selected: $selected');
   }
 
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
       body: Center(
-        child: Text('Crash view aperta. Se ENABLE_CRASH=true l\'app lancia un crash intenzionale.'),
+        child: Text('View E'),
       ),
     );
   }
