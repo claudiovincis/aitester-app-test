@@ -52,7 +52,7 @@ class _AITesterAppState extends State<AITesterApp> {
         GoRoute(path: '/login', builder: (context, state) => LoginPage(appState: _appState)),
         GoRoute(path: '/home', builder: (context, state) => HomePage(appState: _appState)),
         GoRoute(path: '/hub', builder: (context, state) => HubPage(appState: _appState)),
-        GoRoute(path: '/view-a', builder: (context, state) => TaggedViewPage(appState: _appState, title: 'View A', viewTag: ViewTags.viewA)),
+        GoRoute(path: '/view-a', builder: (context, state) => ViewAPage(appState: _appState)),
         GoRoute(path: '/view-b', builder: (context, state) => TaggedViewPage(appState: _appState, title: 'View B', viewTag: ViewTags.viewB)),
         GoRoute(path: '/view-c', builder: (context, state) => TaggedViewPage(appState: _appState, title: 'View C', viewTag: ViewTags.viewC)),
         GoRoute(path: '/view-d', builder: (context, state) => TaggedViewPage(appState: _appState, title: 'View D', viewTag: ViewTags.viewD)),
@@ -300,11 +300,27 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  int _button1ClickCount = 0;
+
   @override
   void initState() {
     super.initState();
     // Track view open (also tracked automatically by navigator observer)
     AITester.trackViewOpen(ViewTags.home);
+  }
+
+  void _handleButton1Click() {
+    _button1ClickCount++;
+    print('🐛 Home Button 1 clicked: $_button1ClickCount times');
+    
+    // BUG 1: Division by zero on 5th click
+    if (_button1ClickCount == 5) {
+      print('🔴 Triggering division by zero bug!');
+      final result = 100 ~/ 0; // Integer division by zero
+      print('Result: $result'); // Never reached
+    }
+    
+    if (context.mounted) context.push('/view-a');
   }
 
   @override
@@ -319,10 +335,8 @@ class _HomePageState extends State<HomePage> {
             AIButton(
               actionTag: ActionTags.home1,
               viewTag: ViewTags.home,
-              onPressed: () {
-                if (context.mounted) context.push('/view-a');
-              },
-              child: const Text('Button 1 -> View A'),
+              onPressed: _handleButton1Click,
+              child: const Text('Button 1 -> View A (click 5x for bug)'),
             ),
             AIButton(
               actionTag: ActionTags.home2,
@@ -357,10 +371,26 @@ class HubPage extends StatefulWidget {
 }
 
 class _HubPageState extends State<HubPage> {
+  int _button2ClickCount = 0;
+
   @override
   void initState() {
     super.initState();
     AITester.trackViewOpen(ViewTags.hub);
+  }
+
+  void _handleButton2Click() {
+    _button2ClickCount++;
+    print('🐛 Hub Button 2 clicked: $_button2ClickCount times');
+    
+    // BUG 3: JSON Parse error on 3rd click
+    if (_button2ClickCount == 3) {
+      print('🔴 Triggering JSON parse error!');
+      final invalidJson = '{"broken": json';
+      jsonDecode(invalidJson); // FormatException
+    }
+    
+    if (context.mounted) context.push('/view-d');
   }
 
   @override
@@ -383,10 +413,8 @@ class _HubPageState extends State<HubPage> {
             AIButton(
               actionTag: ActionTags.hub2,
               viewTag: ViewTags.hub,
-              onPressed: () {
-                if (context.mounted) context.push('/view-d');
-              },
-              child: const Text('Button 2 -> View D'),
+              onPressed: _handleButton2Click,
+              child: const Text('Button 2 -> View D (click 3x for bug)'),
             ),
             AIButton(
               actionTag: ActionTags.hub3,
@@ -395,6 +423,60 @@ class _HubPageState extends State<HubPage> {
                 if (context.mounted) context.push('/crash');
               },
               child: const Text('Button 3 -> Crash View'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ViewAPage extends StatefulWidget {
+  const ViewAPage({super.key, required this.appState});
+
+  final AppState appState;
+
+  @override
+  State<ViewAPage> createState() => _ViewAPageState();
+}
+
+class _ViewAPageState extends State<ViewAPage> {
+  int _tapCount = 0;
+  String? _nullableData;
+
+  @override
+  void initState() {
+    super.initState();
+    AITester.trackViewOpen(ViewTags.viewA);
+  }
+
+  void _handleTap() {
+    setState(() {
+      _tapCount++;
+      print('🐛 View A tapped: $_tapCount times');
+      
+      // BUG 2: Null pointer error on 2nd tap
+      if (_tapCount == 2) {
+        print('🔴 Triggering null pointer bug!');
+        final length = _nullableData!.length; // Null check error
+        print('Length: $length'); // Never reached
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('View A')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Tap count: $_tapCount'),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _handleTap,
+              child: const Text('Tap me (2nd tap crashes)'),
             ),
           ],
         ),
