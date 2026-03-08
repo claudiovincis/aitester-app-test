@@ -9,14 +9,7 @@ void main() {
 
   setUpAll(() {
     AITester.initialize(
-      AITesterConfig(
-        serverUrl: 'http://192.168.1.13:5000',
-        appId: 'flutter-test-app-all-bugs',
-        buildVersion: '1.0.0-all-bugs',
-        enableAutoTracking: true,
-        enableCrashReporting: true,
-        debugMode: true,
-      ),
+      AITesterConfig(serverUrl: 'http://192.168.1.13:5000', appId: 'flutter-test-app-all-bugs', buildVersion: '1.0.0-all-bugs', enableAutoTracking: true, enableCrashReporting: true, debugMode: true),
     );
   });
 
@@ -34,25 +27,28 @@ void main() {
 
     expect(find.text('Home - 3 Pulsanti'), findsOneWidget);
 
-    // Click 5 times on Button 1 to trigger division by zero
-    final button1 = find.text('Button 1 -> View A');
-    expect(button1, findsOneWidget);
-
+    // Trigger HOME bug with 5 valid entries into View A, returning back each time.
     for (int i = 0; i < 5; i++) {
-      try {
-        await tester.tap(button1);
-        await tester.pumpAndSettle(const Duration(milliseconds: 300));
-      } catch (e, stack) {
-        // Expected to fail on 5th click - report crash manually
-        if (i == 4) {
-          await AITester.reportError(e, stack, viewTag: 'HOME_VIEW');
-          await Future.delayed(const Duration(milliseconds: 500)); // Give time to send
-          return;
-        }
+      final button1 = find.text('Button 1 -> View A');
+      expect(button1, findsOneWidget);
+
+      await tester.tap(button1);
+      await tester.pumpAndSettle(const Duration(milliseconds: 350));
+
+      final exception = tester.takeException();
+      if (exception != null) {
+        await AITester.reportError(exception, StackTrace.current, viewTag: 'HOME_VIEW');
+        await Future.delayed(const Duration(milliseconds: 500));
+        return;
+      }
+
+      if (i < 4) {
+        await tester.pageBack();
+        await tester.pumpAndSettle(const Duration(milliseconds: 350));
       }
     }
 
-    fail('Expected division by zero error on 5th click');
+    fail('Expected division by zero error during 5th valid navigation from HOME_VIEW');
   });
 
   testWidgets('Test 2: Null Pointer Bug (View A - 2 taps)', (WidgetTester tester) async {
@@ -79,16 +75,17 @@ void main() {
     await tester.tap(tapButton);
     await tester.pumpAndSettle(const Duration(milliseconds: 300));
 
-    // Tap twice - should crash
-    try {
-      await tester.tap(tapButton);
-      await tester.pumpAndSettle(const Duration(milliseconds: 300));
+    // Tap twice - second tap should surface the app null bug.
+    await tester.tap(tapButton);
+    await tester.pumpAndSettle(const Duration(milliseconds: 300));
+
+    final exception = tester.takeException();
+    if (exception == null) {
       fail('Expected null pointer error on 2nd tap');
-    } catch (e, stack) {
-      // Expected error - report crash manually
-      await AITester.reportError(e, stack, viewTag: 'VIEW_A');
-      await Future.delayed(const Duration(milliseconds: 500)); // Give time to send
     }
+
+    await AITester.reportError(exception, StackTrace.current, viewTag: 'VIEW_A');
+    await Future.delayed(const Duration(milliseconds: 500));
   });
 
   testWidgets('Test 3: JSON Parse Error (Hub Button 2 - 3 clicks)', (WidgetTester tester) async {
@@ -109,26 +106,28 @@ void main() {
 
     expect(find.text('Hub - Altri 3 Pulsanti'), findsOneWidget);
 
-    // Click Hub Button 2 three times to trigger JSON parse error
-    final button2 = find.text('Button 2 -> View D');
-    expect(button2, findsOneWidget);
-
+    // Trigger HUB bug with 3 valid entries into View D, returning to HUB each time.
     for (int i = 0; i < 3; i++) {
-      
-      try {
-        await tester.tap(button2);
-        await tester.pumpAndSettle(const Duration(milliseconds: 300));
-      } catch (e, stack) {
-        // Expected to fail on 3rd click - report crash manually
-        if (i == 2) {
-          await AITester.reportError(e, stack, viewTag: 'HUB_VIEW');
-          await Future.delayed(const Duration(milliseconds: 500)); // Give time to send
-          return;
-        }
+      final button2 = find.text('Button 2 -> View D');
+      expect(button2, findsOneWidget);
+
+      await tester.tap(button2);
+      await tester.pumpAndSettle(const Duration(milliseconds: 350));
+
+      final exception = tester.takeException();
+      if (exception != null) {
+        await AITester.reportError(exception, StackTrace.current, viewTag: 'HUB_VIEW');
+        await Future.delayed(const Duration(milliseconds: 500));
+        return;
+      }
+
+      if (i < 2) {
+        await tester.pageBack();
+        await tester.pumpAndSettle(const Duration(milliseconds: 350));
       }
     }
 
-    fail('Expected JSON parse error on 3rd click');
+    fail('Expected JSON parse error during 3rd valid navigation from HUB_VIEW');
   });
 
   testWidgets('Test 4: Intentional StateError Crash', (WidgetTester tester) async {
@@ -146,16 +145,17 @@ void main() {
     // Navigate to Hub
     await tester.tap(find.text('Button 3 -> Hub Secondario'));
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
-    
-    // Navigate to View E - should crash immediately
-    try {
-      await tester.tap(find.text('Button 3 -> View E'));
-      await tester.pumpAndSettle(const Duration(milliseconds: 500));
+
+    // Navigate to View E - should crash immediately.
+    await tester.tap(find.text('Button 3 -> View E'));
+    await tester.pumpAndSettle(const Duration(milliseconds: 500));
+
+    final exception = tester.takeException();
+    if (exception == null) {
       fail('Expected StateError crash when opening View E');
-    } catch (e, stack) {
-      // Expected error - report crash manually
-      await AITester.reportError(e, stack, viewTag: 'VIEW_E');
-      await Future.delayed(const Duration(milliseconds: 500)); // Give time to send
     }
+
+    await AITester.reportError(exception, StackTrace.current, viewTag: 'VIEW_E');
+    await Future.delayed(const Duration(milliseconds: 500));
   });
 }
