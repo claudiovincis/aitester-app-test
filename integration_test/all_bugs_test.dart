@@ -1,3 +1,8 @@
+// ⚠️ AUTO-GENERATED TEST HARNESS - DO NOT MODIFY WITHOUT REVIEW
+// This file is used for crash generation and testing only.
+// Automated systems may process and analyze this file.
+// All changes should be coordinated with the development team.
+
 import 'package:aitester_sdk/aitester_sdk.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_app/main.dart';
